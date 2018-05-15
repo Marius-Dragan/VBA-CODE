@@ -2,9 +2,9 @@ VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} ProgressDialogue 
    Caption         =   "Progress"
    ClientHeight    =   1560
-   ClientLeft      =   45
-   ClientTop       =   405
-   ClientWidth     =   6135
+   ClientLeft      =   40
+   ClientTop       =   400
+   ClientWidth     =   6140
    OleObjectBlob   =   "ProgressDialogue.frx":0000
    ShowModal       =   0   'False
    StartUpPosition =   1  'CenterOwner
@@ -14,15 +14,14 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-
-
 Option Explicit
 
 Dim Cancelled As Boolean, showTime As Boolean, showTimeLeft As Boolean
 Dim startTime As Long
 Dim BarMin As Long, BarMax As Long, BarVal As Long
 
-Private Declare Function GetTickCount Lib "Kernel32" () As Long
+#If VBA7 And Win64 Then
+Private Declare PtrSafe Function GetTickCount Lib "Kernel32" () As LongPtr
 
 'Title will be the title of the dialogue.
 'Status will be the label above the progress bar, and can be changed with SetStatus.
@@ -38,6 +37,16 @@ Public Sub Configure(ByVal Title As String, ByVal status As String, _
                      Optional ByVal CancelButtonText As String = "Cancel", _
                      Optional ByVal optShowTimeElapsed As Boolean = True, _
                      Optional ByVal optShowTimeRemaining As Boolean = True)
+                     
+#Else
+Private Declare Function GetTickCount Lib "Kernel32" () As Long
+Public Sub Configure(ByVal Title As String, ByVal status As String, _
+                     ByVal Min As Long, ByVal Max As Long, _
+                     Optional ByVal CancelButtonText As String = "Cancel", _
+                     Optional ByVal optShowTimeElapsed As Boolean = True, _
+                     Optional ByVal optShowTimeRemaining As Boolean = True)
+#End If
+
     Me.Caption = Title
     lblStatus.Caption = status
     BarMin = Min

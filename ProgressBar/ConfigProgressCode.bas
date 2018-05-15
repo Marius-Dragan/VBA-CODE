@@ -1,14 +1,11 @@
-Attribute VB_Name = "ConfigProgressCode"
 Option Explicit
-'
-'Please note: you need to import ProgressDialogue form in order to work
-'After you can implement the progress bar in every project to let the user know how long the macro runs
-'
+
 Dim Cancelled As Boolean, showTime As Boolean, showTimeLeft As Boolean
 Dim startTime As Long
 Dim BarMin As Long, BarMax As Long, BarVal As Long
 
-Private Declare Function GetTickCount Lib "Kernel32" () As Long
+#If VBA7 And Win64 Then
+Private Declare PtrSafe Function GetTickCount Lib "Kernel32" () As LongPtr
 
 'Title will be the title of the dialogue.
 'Status will be the label above the progress bar, and can be changed with SetStatus.
@@ -24,6 +21,16 @@ Public Sub Configure(ByVal Title As String, ByVal status As String, _
                      Optional ByVal CancelButtonText As String = "Cancel", _
                      Optional ByVal optShowTimeElapsed As Boolean = True, _
                      Optional ByVal optShowTimeRemaining As Boolean = True)
+
+#Else
+Private Declare Function GetTickCount Lib "Kernel32" () As Long
+Public Sub Configure(ByVal Title As String, ByVal status As String, _
+                     ByVal Min As Long, ByVal Max As Long, _
+                     Optional ByVal CancelButtonText As String = "Cancel", _
+                     Optional ByVal optShowTimeElapsed As Boolean = True, _
+                     Optional ByVal optShowTimeRemaining As Boolean = True)
+#End If
+
     Me.Caption = Title
     lblStatus.Caption = status
     BarMin = Min
