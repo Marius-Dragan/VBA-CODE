@@ -1,19 +1,25 @@
-Attribute VB_Name = "EditConsReport"
+Attribute VB_Name = "ConsReport"
+Option Explicit
+'Created by Marius Dragan on 22/07/2018.
+'Copyright © 2018. All rights reserved.
+
 Sub EditConsReport()
 Attribute EditConsReport.VB_ProcData.VB_Invoke_Func = " \n14"
 
 Dim questionBoxPopUp As VbMsgBoxResult
 Dim lrow As Long, i As Long
-Dim ws As Worksheet
+Dim WS As Worksheet
 
 questionBoxPopUp = MsgBox("Are you sure you want to edit open consignment report?", vbQuestion + vbYesNo + vbDefaultButton1, "Edit consignment report")
     If questionBoxPopUp = vbNo Then Exit Sub
+
+On Error GoTo ErrorHandler
 
  Application.ScreenUpdating = False
  
     Call CopySheet
     
-    Set ws = ActiveSheet
+    Set WS = ActiveSheet
  
     Range("A8").Select
     Range(Selection, Selection.End(xlDown)).Select
@@ -23,11 +29,11 @@ questionBoxPopUp = MsgBox("Are you sure you want to edit open consignment report
         (137, 1), Array(141, 1), Array(148, 1), Array(158, 1), Array(170, 1), Array(185, 1), Array( _
         200, 9)), TrailingMinusNumbers:=True
         
-        changeProperties ws
+        changeProperties WS
         Call DeleteRowBasedOnCriteria
         Range("A1").EntireColumn.AutoFit
         
-        With ws
+        With WS
         '--> Find the last row
         lrow = .Range("G" & .Rows.Count).End(xlUp).Row
         
@@ -49,7 +55,12 @@ questionBoxPopUp = MsgBox("Are you sure you want to edit open consignment report
         Call SaveAsToFolderPath
         
         Application.ScreenUpdating = True
+        MsgBox "Process completed!", vbInformation
         
+Exit Sub
+ErrorHandler:
+MsgBox Err.Number, Err.Source, Err.Description, Err.HelpFile, Err.HelpContext
+
 End Sub
 Private Sub CopySheet()
  
@@ -85,10 +96,10 @@ Dim Sheet As Worksheet
 End Function
 Sub DeleteRowBasedOnCriteria()
 Dim RowToTest As Long
-Dim ws As Worksheet
+Dim WS As Worksheet
 Dim lrow As Long, i As Long
 
-Set ws = ActiveSheet
+Set WS = ActiveSheet
 
 For RowToTest = Cells(Rows.Count, 6).End(xlUp).Offset(-2, 0).Row To 2 Step -1
 
@@ -117,7 +128,7 @@ Next RowToTest
 
  
 
-    With ws
+    With WS
         lrow = .Range("F" & .Rows.Count).End(xlUp).Row
         For i = 3 To lrow
         With Cells(i, 6)
@@ -128,7 +139,7 @@ Next RowToTest
      Next i
        End With
 End Sub
-Private Sub changeProperties(ws As Worksheet)
+Private Sub changeProperties(WS As Worksheet)
 
 Dim tableRng As Range
 Dim columnsToHide As Range
@@ -136,7 +147,7 @@ Dim headerFormat As Range
 
 Set headerFormat = Range(Cells(8, 1), Cells(8, Columns.Count).End(xlToLeft)).Columns
 Set tableRng = Range("A8").CurrentRegion
-Set ws = ActiveSheet
+Set WS = ActiveSheet
 
 With tableRng.Borders
         .LineStyle = xlContinuous
@@ -153,7 +164,7 @@ With tableRng.Borders
     headerFormat.AutoFilter
     tableRng.Cells.EntireColumn.AutoFit
     
-        With ws.Range("A1:Q1")
+        With WS.Range("A1:Q1")
         .Merge
         .value = "Stella McCartney UK - Open Consignment Report"
         .Font.Name = "Arial"
@@ -164,7 +175,7 @@ With tableRng.Borders
         End With
         
 
-     With ws.PageSetup
+     With WS.PageSetup
             .PrintArea = ""
             .PrintTitleRows = ""
             .PrintTitleColumns = ""
@@ -203,7 +214,7 @@ With tableRng.Borders
     Set fso = CreateObject("Scripting.FileSystemObject")
 
     'Change file path to where you want to save the file
-     newFolderPath = Environ("UserProfile") & "\Desktop\Marius\"
+     newFolderPath = Environ("UserProfile") & "\Desktop\Brompton store shared folder\Open Consignment Report\"
      
         If Not fso.FolderExists(newFolderPath) Then
                fso.CreateFolder newFolderPath

@@ -1,3 +1,4 @@
+
 Option Explicit
 
 Dim Cancelled As Boolean, showTime As Boolean, showTimeLeft As Boolean
@@ -54,12 +55,14 @@ End Sub
 
 'Set the value of the status bar, a long which is snapped to a value between Min and Max
 Public Sub SetValue(ByVal value As Long)
+
+Dim progress As Double, runTime As Long
+
     If value < BarMin Then value = BarMin
     If value > BarMax Then value = BarMax
-    Dim progress As Double, runTime As Long
     BarVal = value
     progress = (BarVal - BarMin) / (BarMax - BarMin)
-    ProgressBar.Width = 292 * progress
+    ProgressBar.Width = 352 * progress 'Modify this to reflect the changes in the progress bar to match the width
     lblPercent = Int(progress * 10000) / 100 & "%"
     runTime = GetRunTime()
     If showTime Then lblRunTime.Caption = "Time Elapsed: " & GetRunTimeString(runTime, True)

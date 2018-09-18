@@ -1,8 +1,11 @@
-Attribute VB_Name = "EditBestSeller"
+Attribute VB_Name = "BestSeller"
 Option Explicit
+'Created by Marius Dragan on 22/07/2018.
+'Copyright © 2018. All rights reserved.
+
 Sub EditBestSellerReport()
 
-    Dim ws As Worksheet
+    Dim WS As Worksheet
     Dim delRange As Range
     Dim lrow As Long, i As Long
     Dim questionBoxPopUp As VbMsgBoxResult
@@ -16,9 +19,9 @@ Sub EditBestSellerReport()
 
     Call CopySheet
     
-    Set ws = ActiveSheet
+    Set WS = ActiveSheet
 
-    With ws
+    With WS
         lrow = .Range("A" & .Rows.Count).End(xlUp).Row
         currentProgressBar.Configure "Editing..." & "Please wait!", "Gathering info", i, lrow, , True, True
         currentProgressBar.Show
@@ -30,6 +33,11 @@ Sub EditBestSellerReport()
             currentProgressBar.SetStatus "Looping and deleting all rows where cell A and cell B are empty " & i & " out of " & lrow & " rows done"
             If currentProgressBar.cancelIsPressed Then GoTo CanceledBtnPressed:
             
+            If .Range("A" & i).value = "Style" Or .Range("B" & i).value = "Color" Then
+                .Range("A" & i).value = ""
+                .Range("B" & i).value = ""
+            End If
+            
             If Len(Trim(.Range("A" & i).value)) = 0 Or Len(Trim(.Range("B" & i).value)) = 0 Then
                 If delRange Is Nothing Then
                     Set delRange = .Rows(i)
@@ -40,6 +48,8 @@ Sub EditBestSellerReport()
         Next i
 
         If Not delRange Is Nothing Then delRange.Delete
+        
+        Set delRange = Nothing
 
         '--> Find the new last row
         lrow = .Range("A" & .Rows.Count).End(xlUp).Row
@@ -87,9 +97,6 @@ Sub EditBestSellerReport()
                 .Range("G" & i).ClearContents
             End If
         Next i
-
-        Set delRange = Nothing
-        
         
         
         currentProgressBar.Hide
@@ -113,6 +120,8 @@ Sub EditBestSellerReport()
         Next i
 
         If Not delRange Is Nothing Then delRange.Delete
+        
+        Set delRange = Nothing
 
         '--> Find the new last row
         lrow = .Range("A" & .Rows.Count).End(xlUp).Row
@@ -142,7 +151,7 @@ Sub EditBestSellerReport()
     End With
 
     Range("A5").EntireRow.AutoFit
-    editPrintProperties ws
+    EditPrintProperties WS
     Call CreateTable
     
     
@@ -150,7 +159,7 @@ ScreenUpdate:
     Application.ScreenUpdating = True
     'ws.Range("A5").Activate
     'Selection.AutoFilter
-    ws.Range("A6").Activate
+    WS.Range("A6").Activate
     ActiveWindow.FreezePanes = True
     
     Unload currentProgressBar
@@ -368,15 +377,16 @@ Private Sub CreateTable()
     End If
   Set lo = Nothing
 End Sub
-Private Function TableExistsOnSheet(ws As Worksheet, sTableName As String) As Boolean
-    TableExistsOnSheet = ws.Evaluate("ISREF(" & sTableName & ")")
+Private Function TableExistsOnSheet(WS As Worksheet, sTableName As String) As Boolean
+'--> Note this method will fail if the name of the sheet contains the name with space or ()
+    TableExistsOnSheet = WS.Evaluate("ISREF(" & sTableName & ")")
 End Function
 
-Private Sub editPrintProperties(ws As Worksheet)
+Private Sub EditPrintProperties(WS As Worksheet)
 
 Dim lastRow As Long
 
-     With ws.PageSetup
+     With WS.PageSetup
             .PrintArea = ""
             .PrintTitleRows = ""
             .PrintTitleColumns = ""
@@ -418,7 +428,7 @@ End Sub
     Set fso = CreateObject("Scripting.FileSystemObject")
 
     'Change file path to where you want to save the file
-     newFolderPath = Environ("UserProfile") & "\Desktop\Marius\"
+     newFolderPath = Environ("UserProfile") & "\Desktop\"
     
         If Not fso.FolderExists(newFolderPath) Then
                fso.CreateFolder newFolderPath
@@ -441,17 +451,17 @@ Private Sub EditSheet()
  
 Dim i As Integer
 Dim lrow As Long
-Dim ws As Worksheet
+Dim WS As Worksheet
 
         If sheetExists("BestSellers") Then
             For i = 1 To Worksheets.Count
                 If Worksheets(i).Name Like "*BestSellers*" Then
                 
                     Worksheets(i).Activate
-                    Set ws = ActiveSheet
+                    Set WS = ActiveSheet
                     
-                    With ws
-                        lrow = .Range("A" & .Rows.Count).End(xlUp).Row
+                    With WS
+                        lrow = .Range("C" & .Rows.Count).End(xlUp).Row
                         With .Range("H5:H" & lrow)
                             If .MergeCells Then
                                 .Cells.UnMerge
@@ -465,7 +475,9 @@ Dim ws As Worksheet
                         .Range("I6:I" & lrow).Formula = "=C6 & E6 & G6"
                         .Range("I6:I" & lrow).value = .Range("I6:I" & lrow).value
                         .Range("I6:I" & lrow).Select
+                        
                         Call Trim_Cells_Array_Method
+                        
                         .Range("I5").Select
                         Sheets(i).Tab.Color = RGB(31, 237, 139)
                     
@@ -507,17 +519,23 @@ Dim i As Long, j As Long
   Set rng = Nothing
 End Sub
 Sub CompareBestSellerWithFrozenReport()
-
-    Dim bestSellerListSkuCriteria As Variant
+'--> Need to add dependency SmartUtlilities
     
+    'Source
+    Dim bestSellerListSkuCriteria As Variant
     Dim bestSellerList As Range
     Dim bestSellerListResult As Range
     Dim bestSellerListSkuCell As Range
+    Dim bestSellerListHeaderRowsCount As Integer
+    Dim bestSellerListHeaderRowNum As Integer
     
+    'Comparing against list
     Dim currentAllSizesOnHandListCellRow As Long
     Dim AllSizesOnHandList As Range
+    Dim desiredResultColumn As Integer
     Dim foundMatchingAllSizesOnHandListSku As Range
-    Dim ws As Worksheet
+    Dim AllSizesOnHandListHeaderRowNum As Integer
+    Dim AllSizesOnHandListColumnsCount As Integer
     
     
     On Error GoTo ErrorHandler
@@ -525,14 +543,14 @@ Sub CompareBestSellerWithFrozenReport()
     Call EditSheet
     
     '---> this method needs all data to be visible in order to loop through all cells
-SmartUtilities.ResetFilters
-    
+    Call SmartUtilities.ResetFilters
+        
     '---> Allows users to select the ranges in case the table columns will change in the future
     Set bestSellerList = Application.InputBox("Select your BestSeller list range including header:", Default:="'" & ActiveSheet.Name & "'!", Type:=8)
         If Not bestSellerList Is Nothing Then
             If bestSellerList.Columns.Count = 1 Then
                 Else
-                 MsgBox "Multiple columns selected! Please pick only one column in the best seller sheet and retry.", vbInformation
+                 MsgBox "Multiple columns selected! Please pick only one column in the best seller sheet and retry.", vbCritical
                 Exit Sub
             End If
         End If
@@ -541,7 +559,7 @@ SmartUtilities.ResetFilters
         If Not bestSellerListResult Is Nothing Then
             If bestSellerListResult.Rows.Count = 1 Then
                 Else
-                 MsgBox "Multiple cells selected! Please pick only the header cell in the best seller sheet and retry.", vbInformation
+                 MsgBox "Multiple cells selected! Please pick only the header cell in the best seller sheet and retry.", vbCritical
                 Exit Sub
             End If
         End If
@@ -550,37 +568,48 @@ SmartUtilities.ResetFilters
         If Not AllSizesOnHandList Is Nothing Then
             If AllSizesOnHandList.Columns.Count = 1 Then
                 Else
-                 MsgBox "Multiple columns selected! Please pick only one column in the all stock on hand list sheet and retry!", vbInformation
+                 MsgBox "Multiple columns selected! Please pick only one column in the all stock on hand list sheet and retry!", vbCritical
                 Exit Sub
             End If
         End If
+        
+    desiredResultColumn = 7
+    bestSellerListHeaderRowsCount = bestSellerListResult.Row
+    bestSellerListHeaderRowNum = bestSellerListResult.Row - 1
+    
+    
+     AllSizesOnHandListHeaderRowNum = AllSizesOnHandList.Row - 1
+     AllSizesOnHandListColumnsCount = (desiredResultColumn - AllSizesOnHandList.Column) + 1
     
     Application.ScreenUpdating = False
        
     '---> Allows users to compare the inventory list to the scan list in order to find matches
     For Each bestSellerListSkuCell In bestSellerList
-        bestSellerListSkuCriteria = bestSellerListSkuCell.value
+        bestSellerListSkuCriteria = Trim(bestSellerListSkuCell.value) 'Using trim to delete the extra space from the data otherwhise it will throw an error
     
      With AllSizesOnHandList
             Set foundMatchingAllSizesOnHandListSku = .Find(What:=bestSellerListSkuCriteria, After:=.Cells(1, 1), LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:=True, SearchFormat:=False) 'finds a match
      End With
     
     If foundMatchingAllSizesOnHandListSku Is Nothing Then
-        If bestSellerListSkuCell.Row = 5 Then
-            bestSellerListResult.Cells(bestSellerListSkuCell.Row - 4).value = "JDA Qty [Qty(Size) / Total Qty]"
-            bestSellerListResult.Font.FontStyle = "Bold"
+        If bestSellerListSkuCell.Row = bestSellerListHeaderRowsCount Then
+            If bestSellerListResult.Cells(bestSellerListSkuCell.Row - bestSellerListHeaderRowNum).value = vbNullString Then
+                bestSellerListResult.Cells(bestSellerListSkuCell.Row - bestSellerListHeaderRowNum).value = "JDA Qty [Qty(Size) / Total Qty]"
+                bestSellerListResult.Font.FontStyle = "Bold"
+            End If
             
-        ElseIf bestSellerListSkuCell.Row > 5 Then
-               bestSellerListResult.Cells(bestSellerListSkuCell.Row - 4).value = "No Stock on hand"
+        ElseIf bestSellerListSkuCell.Row > bestSellerListHeaderRowsCount Then
+               bestSellerListResult.Cells(bestSellerListSkuCell.Row - bestSellerListHeaderRowNum).value = "No Stock on hand"
         End If
+        
       Else
         
     With AllSizesOnHandList
          currentAllSizesOnHandListCellRow = .Find(What:=bestSellerListSkuCriteria, After:=.Cells(1, 1), LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:=True, SearchFormat:=False).Row
     End With
         
-        bestSellerListResult.Cells(bestSellerListSkuCell.Row - 4).value = AllSizesOnHandList.Cells(currentAllSizesOnHandListCellRow - 4, 3).value _
-                                                                        & " / " & AllSizesOnHandList.Cells(currentAllSizesOnHandListCellRow - 4, 4).value & " units"
+        bestSellerListResult.Cells(bestSellerListSkuCell.Row - bestSellerListHeaderRowNum).value = AllSizesOnHandList.Cells(currentAllSizesOnHandListCellRow - AllSizesOnHandListHeaderRowNum, AllSizesOnHandListColumnsCount).value _
+                                                                        & " / " & AllSizesOnHandList.Cells(currentAllSizesOnHandListCellRow - AllSizesOnHandListHeaderRowNum, 4).value & " units"
         
 
     End If
@@ -589,6 +618,7 @@ SmartUtilities.ResetFilters
         With bestSellerListResult
              .EntireColumn.WrapText = True
              .ColumnWidth = 24
+        
         End With
         
     
@@ -603,6 +633,10 @@ ErrorHandler:
                 Case 424
                 Exit Sub
                 Case 0
+                Exit Sub
+                Case 9
+                MsgBox "This will only work when run from the bestseller report worksheet " & _
+                "as it requires first to do some editing on the worksheet before comparing.", vbInformation
                 Exit Sub
                 
                 Case Else

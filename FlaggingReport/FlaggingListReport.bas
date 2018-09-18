@@ -1,8 +1,11 @@
-Attribute VB_Name = "FlaggingListReport"
+Attribute VB_Name = "FlaggingReport"
 Option Explicit
-Sub EditFlaggingListReport()
+'Created by Marius Dragan on 22/07/2018.
+'Copyright © 2018. All rights reserved.
 
-    Dim ws As Worksheet
+Sub EditFlaggingReport()
+
+    Dim WS As Worksheet
     Dim delRange As Range
     Dim lrow As Long, i As Long
     Dim questionBoxPopUp As VbMsgBoxResult
@@ -16,9 +19,9 @@ Sub EditFlaggingListReport()
 
     Call CopySheet
     
-    Set ws = ActiveSheet
+    Set WS = ActiveSheet
 
-    With ws
+    With WS
         lrow = .Range("A" & .Rows.Count).End(xlUp).Row
         currentProgressBar.Configure "Editing..." & "Please wait!", "Gathering info", i, lrow, , True, True
         currentProgressBar.Show
@@ -44,6 +47,8 @@ Sub EditFlaggingListReport()
         Next i
 
         If Not delRange Is Nothing Then delRange.Delete
+        
+        Set delRange = Nothing
 
         '--> Find the new last row
         lrow = .Range("A" & .Rows.Count).End(xlUp).Row
@@ -92,10 +97,6 @@ Sub EditFlaggingListReport()
                 .Range("G" & i).ClearContents
             End If
         Next i
-
-        Set delRange = Nothing
-        
-        
         
         currentProgressBar.Hide
         currentProgressBar.Show
@@ -118,6 +119,8 @@ Sub EditFlaggingListReport()
         Next i
 
         If Not delRange Is Nothing Then delRange.Delete
+        
+        Set delRange = Nothing
 
         '--> Find the new last row
         lrow = .Range("A" & .Rows.Count).End(xlUp).Row
@@ -147,20 +150,19 @@ Sub EditFlaggingListReport()
     End With
 
     Range("A5").EntireRow.AutoFit
-    editPrintProperties ws
+    EditPrintProperties WS
     Call CreateTable
-    
+    Call SaveAsToFolderPath
     
 ScreenUpdate:
     Application.ScreenUpdating = True
     'ws.Range("A5").Activate
     'Selection.AutoFilter
-    ws.Range("A6").Activate
+    WS.Range("A6").Activate
     ActiveWindow.FreezePanes = True
     
     Unload currentProgressBar
-    Call SaveAsToFolderPath
-    
+ 
     MsgBox "Process completed!", vbInformation
     
     Exit Sub
@@ -375,15 +377,16 @@ Private Sub CreateTable()
   Set lo = Nothing
   
 End Sub
-Private Function TableExistsOnSheet(ws As Worksheet, sTableName As String) As Boolean
-    TableExistsOnSheet = ws.Evaluate("ISREF(" & sTableName & ")")
+Private Function TableExistsOnSheet(WS As Worksheet, sTableName As String) As Boolean
+'--> Note this method will fail if the name of the sheet contains the name with space or ()
+    TableExistsOnSheet = WS.Evaluate("ISREF(" & sTableName & ")")
 End Function
 
-Private Sub editPrintProperties(ws As Worksheet)
+Private Sub EditPrintProperties(WS As Worksheet)
 
 Dim lastRow As Long
 
-     With ws.PageSetup
+     With WS.PageSetup
             .PrintArea = ""
             .PrintTitleRows = ""
             .PrintTitleColumns = ""
@@ -425,7 +428,7 @@ End Sub
     Set fso = CreateObject("Scripting.FileSystemObject")
 
     'Change file path to where you want to save the file
-     newFolderPath = Environ("UserProfile") & "\Desktop\Marius\"
+     newFolderPath = Environ("UserProfile") & "\Desktop\"
     
         If Not fso.FolderExists(newFolderPath) Then
                fso.CreateFolder newFolderPath
@@ -448,7 +451,7 @@ Private Sub EditSheet()
  
 Dim i As Integer
 Dim lrow As Long
-Dim ws As Worksheet
+Dim WS As Worksheet
 
         If sheetExists("All_Stock_On_Hand_Report") Then
             For i = 1 To Worksheets.Count
@@ -484,20 +487,25 @@ Dim ws As Worksheet
     End If
 
 End Sub
-Sub CompareFlaggingListWithFrozenReport()
+Sub CompareFlaggingReportWithFrozenReport()
+'--> Still to try exploring getting the range automatically from the tables name
+'--> Need to add dependency SmartUtlilities
 
-
-    Dim flaggingListStyleFabricColorCriteria As Variant
-    
+    'Source list
     Dim flaggingList As Range
     Dim flaggingListResult As Range
     Dim flaggingListStyleFabricColorCell As Range
+    Dim flaggingListHeaderRowsCount As Integer
+    Dim flaggingListHeaderRowNum As Integer
     
+    'Comparing against list
     Dim currentAllSizesOnHandListCellRow As Long
     Dim AllSizesOnHandList As Range
     Dim foundMatchingAllSizesOnHandListStyleFabricColor As Range
-    Dim ws As Worksheet
-    
+    Dim AllSizesOnHandListHeaderRowNum As Integer
+
+    'Variable to hold if match found on the comparing against list
+    Dim flaggingListStyleFabricColorCriteria As Variant
     
     On Error GoTo ErrorHandler
     
@@ -510,7 +518,7 @@ Sub CompareFlaggingListWithFrozenReport()
         If Not flaggingList Is Nothing Then
             If flaggingList.Columns.Count = 1 Then
                 Else
-                 MsgBox "Multiple columns selected! Please pick only one column in the flagging list sheet and retry.", vbInformation
+                 MsgBox "Multiple columns selected! Please pick only one column in the flagging list sheet and retry.", vbCritical
                 Exit Sub
             End If
         End If
@@ -519,7 +527,7 @@ Sub CompareFlaggingListWithFrozenReport()
         If Not flaggingListResult Is Nothing Then
             If flaggingListResult.Rows.Count = 1 Then
                 Else
-                 MsgBox "Multiple cells selected! Please pick only the header cell in the flagging list sheet and retry.", vbInformation
+                 MsgBox "Multiple cells selected! Please pick only the header cell in the flagging list sheet and retry.", vbCritical
                 Exit Sub
             End If
         End If
@@ -528,28 +536,35 @@ Sub CompareFlaggingListWithFrozenReport()
         If Not AllSizesOnHandList Is Nothing Then
             If AllSizesOnHandList.Columns.Count = 1 Then
                 Else
-                 MsgBox "Multiple columns selected! Please pick only one column in the all stock on hand list sheet and retry!", vbInformation
+                 MsgBox "Multiple columns selected! Please pick only one column in the all stock on hand list sheet and retry!", vbCritical
                 Exit Sub
             End If
         End If
+
+     flaggingListHeaderRowsCount = flaggingListResult.Row
+     flaggingListHeaderRowNum = flaggingListResult.Row - 1
+    
+     AllSizesOnHandListHeaderRowNum = AllSizesOnHandList.Row - 1
 
     Application.ScreenUpdating = False
        
     '---> Allows users to compare the inventory list to the scan list in order to find matches
     For Each flaggingListStyleFabricColorCell In flaggingList
-        flaggingListStyleFabricColorCriteria = flaggingListStyleFabricColorCell.value
+        flaggingListStyleFabricColorCriteria = Trim(flaggingListStyleFabricColorCell.value) 'Using trim to delete the extra space from the data otherwhise it will throw an error
     
      With AllSizesOnHandList
             Set foundMatchingAllSizesOnHandListStyleFabricColor = .Find(What:=flaggingListStyleFabricColorCriteria, After:=.Cells(1, 1), LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:=True, SearchFormat:=False) 'finds a match
      End With
     
     If foundMatchingAllSizesOnHandListStyleFabricColor Is Nothing Then
-        If flaggingListStyleFabricColorCell.Row = 1 Then
-            flaggingListResult.Cells(flaggingListStyleFabricColorCell.Row).value = "JDA Qty [Qty(Size) / Total Qty]"
-            flaggingListResult.Font.FontStyle = "Bold"
+        If flaggingListStyleFabricColorCell.Row = flaggingListHeaderRowsCount Then
+            If flaggingListResult.Cells(flaggingListStyleFabricColorCell.Row - flaggingListHeaderRowNum).value = vbNullString Then
+                flaggingListResult.Cells(flaggingListStyleFabricColorCell.Row - flaggingListHeaderRowNum).value = "JDA Qty [Qty(Size) / Total Qty]"
+                flaggingListResult.Font.FontStyle = "Bold"
+            End If
             
-        ElseIf flaggingListStyleFabricColorCell.Row > 1 Then
-               flaggingListResult.Cells(flaggingListStyleFabricColorCell.Row).value = "No Stock on hand"
+        ElseIf flaggingListStyleFabricColorCell.Row > flaggingListHeaderRowsCount Then
+               flaggingListResult.Cells(flaggingListStyleFabricColorCell.Row - flaggingListHeaderRowNum).value = "No Stock on hand"
         End If
       Else
         
@@ -557,8 +572,8 @@ Sub CompareFlaggingListWithFrozenReport()
          currentAllSizesOnHandListCellRow = .Find(What:=flaggingListStyleFabricColorCriteria, After:=.Cells(1, 1), LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:=True, SearchFormat:=False).Row
     End With
         
-        flaggingListResult.Cells(flaggingListStyleFabricColorCell.Row).value = AllSizesOnHandList.Cells(currentAllSizesOnHandListCellRow - 4, 3).value _
-                                                                        & " / " & AllSizesOnHandList.Cells(currentAllSizesOnHandListCellRow - 4, 4).value & " units"
+        flaggingListResult.Cells(flaggingListStyleFabricColorCell.Row - flaggingListHeaderRowNum).value = AllSizesOnHandList.Cells(currentAllSizesOnHandListCellRow - AllSizesOnHandListHeaderRowNum, 3).value _
+                                                                        & " / " & AllSizesOnHandList.Cells(currentAllSizesOnHandListCellRow - AllSizesOnHandListHeaderRowNum, 4).value & " units"
         
 
     End If
@@ -588,10 +603,3 @@ ErrorHandler:
         End Select
     
     End Sub
-
-
-
-
-
-
-

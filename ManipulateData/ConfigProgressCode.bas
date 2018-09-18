@@ -1,10 +1,12 @@
-Attribute VB_Name = "ConfigProgressCode"
+
 Option Explicit
+
 Dim Cancelled As Boolean, showTime As Boolean, showTimeLeft As Boolean
 Dim startTime As Long
 Dim BarMin As Long, BarMax As Long, BarVal As Long
 
-Private Declare Function GetTickCount Lib "Kernel32" () As Long
+#If VBA7 And Win64 Then
+Private Declare PtrSafe Function GetTickCount Lib "Kernel32" () As LongPtr
 
 'Title will be the title of the dialogue.
 'Status will be the label above the progress bar, and can be changed with SetStatus.
@@ -20,6 +22,16 @@ Public Sub Configure(ByVal Title As String, ByVal status As String, _
                      Optional ByVal CancelButtonText As String = "Cancel", _
                      Optional ByVal optShowTimeElapsed As Boolean = True, _
                      Optional ByVal optShowTimeRemaining As Boolean = True)
+
+#Else
+Private Declare Function GetTickCount Lib "Kernel32" () As Long
+Public Sub Configure(ByVal Title As String, ByVal status As String, _
+                     ByVal Min As Long, ByVal Max As Long, _
+                     Optional ByVal CancelButtonText As String = "Cancel", _
+                     Optional ByVal optShowTimeElapsed As Boolean = True, _
+                     Optional ByVal optShowTimeRemaining As Boolean = True)
+#End If
+
     Me.Caption = Title
     lblStatus.Caption = status
     BarMin = Min
@@ -43,12 +55,14 @@ End Sub
 
 'Set the value of the status bar, a long which is snapped to a value between Min and Max
 Public Sub SetValue(ByVal value As Long)
+
+Dim progress As Double, runTime As Long
+
     If value < BarMin Then value = BarMin
     If value > BarMax Then value = BarMax
-    Dim progress As Double, runTime As Long
     BarVal = value
     progress = (BarVal - BarMin) / (BarMax - BarMin)
-    ProgressBar.Width = 292 * progress
+    ProgressBar.Width = 352 * progress 'Modify this to reflect the changes in the progress bar to match the width
     lblPercent = Int(progress * 10000) / 100 & "%"
     runTime = GetRunTime()
     If showTime Then lblRunTime.Caption = "Time Elapsed: " & GetRunTimeString(runTime, True)
@@ -96,4 +110,3 @@ Private Sub CancelButton_Click()
     Cancelled = True
     lblStatus.Caption = "Cancelled By User. Please Wait."
 End Sub
-

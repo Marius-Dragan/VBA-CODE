@@ -1,8 +1,11 @@
 Attribute VB_Name = "ComparingLists"
 Option Explicit
+'Created by Marius Dragan on 22/07/2018.
+'Copyright © 2018. All rights reserved.
 
-Sub ComparingLists()
-'--> Please note this procedure requires dependency to be installed to work ResetFilters
+Sub ComparingTwoLists()
+'--> Working version including to pick what column you what data
+'--> Need to add dependency SmartUtlilities
 
     'Source list
     Dim cellCriteria As Variant
@@ -17,10 +20,10 @@ Sub ComparingLists()
     Dim compareAgainstListCellRowNum As Long
     Dim compareAgainstList As Range
     Dim desiredResultColumn As Range
-    Dim compareAgainstListHeaderRowsCount As Integer
+    Dim compareAgainstListHeaderRowNum As Integer
     Dim compareAgainstListColumnsCount As Integer
     
-    'Variable to hold if match fount on the comparingAgainstList
+    'Variable to hold if match found on the comparingAgainstList
     Dim foundMatch As Range
     
     On Error GoTo ErrorHandler
@@ -32,7 +35,7 @@ Sub ComparingLists()
         If Not sourceList Is Nothing Then
             If sourceList.Columns.Count = 1 Then
                 Else
-                 MsgBox "Multiple columns selected! Please pick only one column in the source list sheet and retry.", vbInformation
+                 MsgBox "Multiple columns selected! Please pick only one column in the source list sheet and retry.", vbCritical
                 Exit Sub
             End If
         End If
@@ -41,7 +44,7 @@ Sub ComparingLists()
         If Not sourceListResult Is Nothing Then
             If sourceListResult.Rows.Count = 1 Then
                 Else
-                 MsgBox "Multiple cells selected! Please pick only the header cell in the source list sheet and retry.", vbInformation
+                 MsgBox "Multiple cells selected! Please pick only the header cell in the source list sheet and retry.", vbCritical
                 Exit Sub
             End If
         End If
@@ -50,7 +53,7 @@ Sub ComparingLists()
         If Not compareAgainstList Is Nothing Then
             If compareAgainstList.Columns.Count = 1 Then
                 Else
-                 MsgBox "Multiple columns selected! Please pick only one column in the comparing list sheet and retry.", vbInformation
+                 MsgBox "Multiple columns selected! Please pick only one column in the comparing list sheet and retry.", vbCritical
                 Exit Sub
             End If
         End If
@@ -59,7 +62,7 @@ Sub ComparingLists()
         If Not compareAgainstList Is Nothing Then
             If compareAgainstList.Columns.Count = 1 Or compareAgainstList.Rows.Count = 1 Then
                 Else
-                 MsgBox "Multiple columns or rows selected! Please pick only the header cell in the comparing list sheet that has the needed data and retry.", vbInformation
+                 MsgBox "Multiple columns or rows selected! Please pick only the header cell in the comparing list sheet that has the needed data and retry.", vbCritical
                 Exit Sub
             End If
         End If
@@ -68,14 +71,14 @@ Sub ComparingLists()
     sourceListHeaderRowNum = sourceListResult.Row - 1
     
     
-     compareAgainstListHeaderRowsCount = desiredResultColumn.Row - 1
+     compareAgainstListHeaderRowNum = desiredResultColumn.Row - 1
      compareAgainstListColumnsCount = (desiredResultColumn.Column - compareAgainstList.Column) + 1
     
     Application.ScreenUpdating = False
        
     '---> Allows users to compare the source list to the comparing against list in order to find matches
     For Each sourceListCell In sourceList
-        cellCriteria = sourceListCell.value
+        cellCriteria = Trim(sourceListCell.value) 'Using trim to delete the extra space from the data otherwhise it will throw an error
     
      With compareAgainstList
             Set foundMatch = .Find(What:=cellCriteria, After:=.Cells(1, 1), LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:=True, SearchFormat:=False) 'finds a match
@@ -83,8 +86,10 @@ Sub ComparingLists()
     
     If foundMatch Is Nothing Then
         If sourceListCell.Row = sourceListHeaderRowsCount Then
-            sourceListResult.Cells(sourceListCell.Row - sourceListHeaderRowNum).value = "Comparing List"
-            sourceListResult.Font.FontStyle = "Bold"
+            If sourceListResult.Cells(sourceListCell.Row - sourceListHeaderRowNum).value = vbNullString Then
+                sourceListResult.Cells(sourceListCell.Row - sourceListHeaderRowNum).value = "Comparing List"
+                sourceListResult.Font.FontStyle = "Bold"
+            End If
             
         ElseIf sourceListCell.Row > sourceListHeaderRowsCount Then
                sourceListResult.Cells(sourceListCell.Row - sourceListHeaderRowNum).value = "No match found"
@@ -95,7 +100,7 @@ Sub ComparingLists()
          compareAgainstListCellRowNum = .Find(What:=cellCriteria, After:=.Cells(1, 1), LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:=True, SearchFormat:=False).Row
     End With
         
-        sourceListResult.Cells(sourceListCell.Row - sourceListHeaderRowNum).value = compareAgainstList.Cells(compareAgainstListCellRowNum - compareAgainstListHeaderRowsCount, compareAgainstListColumnsCount).value
+        sourceListResult.Cells(sourceListCell.Row - sourceListHeaderRowNum).value = compareAgainstList.Cells(compareAgainstListCellRowNum - compareAgainstListHeaderRowNum, compareAgainstListColumnsCount).value
 
     End If
     Next sourceListCell
