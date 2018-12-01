@@ -7,7 +7,7 @@ Sub EditSpotCheck()
 
     Dim WS As Worksheet
     Dim delRange As Range
-    Dim lrow As Long, i As Long
+    Dim lRow As Long, i As Long
     Dim questionBoxPopUp As VbMsgBoxResult
     Dim currentProgressBar As New ProgressDialogue
 
@@ -22,15 +22,15 @@ Sub EditSpotCheck()
     Set WS = ActiveSheet
 
     With WS
-        lrow = .Range("A" & .Rows.Count).End(xlUp).Row
-        currentProgressBar.Configure "Editing..." & "Please wait!", "Gathering info", i, lrow, , True, True
+        lRow = .Range("A" & .Rows.Count).End(xlUp).Row
+        currentProgressBar.Configure "Editing..." & "Please wait!", "Gathering info", i, lRow, , True, True
         currentProgressBar.Show
 
         '--> Delete All rows where Cell A and Cell B are empty
-        For i = 6 To lrow
+        For i = 6 To lRow
         
             currentProgressBar.SetValue i
-            currentProgressBar.SetStatus "Looping and deleting all rows where cell A and cell B are empty " & i & " out of " & lrow & " rows done"
+            currentProgressBar.SetStatus "Looping and deleting all rows where cell A and cell B are empty " & i & " out of " & lRow & " rows done"
             If currentProgressBar.cancelIsPressed Then GoTo CanceledBtnPressed:
             
             If Len(Trim(.Range("A" & i).value)) = 0 Or Len(Trim(.Range("B" & i).value)) = 0 Then
@@ -47,7 +47,7 @@ Sub EditSpotCheck()
         Set delRange = Nothing
 
         '--> Find the new last row
-        lrow = .Range("A" & .Rows.Count).End(xlUp).Row
+        lRow = .Range("A" & .Rows.Count).End(xlUp).Row
 
         '--> Insert a new column between G and H
         .Columns(8).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
@@ -55,8 +55,8 @@ Sub EditSpotCheck()
         '--> Insert a formula =G6 & "(" & I6 & ")" in H6
         '--> Inserting the formula in the entire column in one go
         '--> and converting it to values
-        .Range("H6:H" & lrow).Formula = "=G6 & ""("" & I6 & "")"""
-        .Range("H6:H" & lrow).value = .Range("H6:H" & lrow).value
+        .Range("H6:H" & lRow).Formula = "=G6 & ""("" & I6 & "")"""
+        .Range("H6:H" & lRow).value = .Range("H6:H" & lRow).value
         '--> Copy the header from Col G to Col H so that we can delete the
         '--> Column G as it is not required anymore
         
@@ -69,11 +69,11 @@ Sub EditSpotCheck()
 
         '--> Using a reverse loop to append values from bottom row to the row above
         '--> After appending clear the cell G so that we can later delete the row
-        currentProgressBar.Configure "Editing..." & "Please wait!", "Gathering info", i, lrow, , True, True
-        For i = lrow To 7 Step -1
+        currentProgressBar.Configure "Editing..." & "Please wait!", "Gathering info", i, lRow, , True, True
+        For i = lRow To 7 Step -1
         
             currentProgressBar.SetValue i
-            currentProgressBar.SetStatus "Using a reverse loop to append values from bottom row to the row above " & i & " out of " & lrow & " rows done"
+            currentProgressBar.SetStatus "Using a reverse loop to append values from bottom row to the row above " & i & " out of " & lRow & " rows done"
             If currentProgressBar.cancelIsPressed Then GoTo CanceledBtnPressed:
             
             If .Range("D" & i).value = .Range("D" & i - 1).value Then
@@ -87,11 +87,11 @@ Sub EditSpotCheck()
         currentProgressBar.Show
 
         '--> Delete rows where Cell G is empty
-        currentProgressBar.Configure "Editing..." & "Please wait!", "Gathering info", i, lrow, , True, True
-        For i = 6 To lrow
+        currentProgressBar.Configure "Editing..." & "Please wait!", "Gathering info", i, lRow, , True, True
+        For i = 6 To lRow
         
             currentProgressBar.SetValue i
-            currentProgressBar.SetStatus "Delete rows where the rows on cell G are empty " & i & " out of " & lrow & " rows done"
+            currentProgressBar.SetStatus "Delete rows where the rows on cell G are empty " & i & " out of " & lRow & " rows done"
             If currentProgressBar.cancelIsPressed Then GoTo CanceledBtnPressed:
             
             If Len(Trim(.Range("G" & i).value)) = 0 Then
@@ -108,15 +108,15 @@ Sub EditSpotCheck()
         Set delRange = Nothing
 
         '--> Find the new last row
-        lrow = .Range("A" & .Rows.Count).End(xlUp).Row
+        lRow = .Range("A" & .Rows.Count).End(xlUp).Row
 
         '--> Calculating the variance
          
-        .Range("J6:J" & lrow).Formula = "=H6-I6"
+        .Range("J6:J" & lRow).Formula = "=H6-I6"
         '.Range("J6:J" & lRow).Value = .Range("J6:J" & lRow).Value '<--- Line to convert formulas to values for column J
         
         
-    With .Range("G" & lrow + 1)
+    With .Range("G" & lRow + 1)
         .value = "Grand Total:"
         .Font.Name = "Arial"
         .Font.FontStyle = "Bold"
@@ -124,31 +124,31 @@ Sub EditSpotCheck()
         .BorderAround xlContinuous, xlThin
         End With
     
-    With .Range("H" & lrow + 1)
-        .Formula = "=SUM(H6" & ":H" & lrow & ")"
+    With .Range("H" & lRow + 1)
+        .Formula = "=SUM(H6" & ":H" & lRow & ")"
         .Font.Name = "Arial"
         .Font.FontStyle = "Bold"
         .Font.Color = vbRed
         .BorderAround xlContinuous, xlThin
     End With
     
-    With .Range("I" & lrow + 1)
-        .Formula = "=SUM(I6" & ":I" & lrow & ")"
+    With .Range("I" & lRow + 1)
+        .Formula = "=SUM(I6" & ":I" & lRow & ")"
         .Font.Name = "Arial"
         .Font.FontStyle = "Bold"
         .Font.Color = vbGreen
         .BorderAround xlContinuous, xlThin
     End With
     
-        With .Range("J" & lrow + 1)
-        .Formula = "=SUM(J6" & ":J" & lrow & ")"
+        With .Range("J" & lRow + 1)
+        .Formula = "=SUM(J6" & ":J" & lRow & ")"
         .Font.Name = "Arial"
         .Font.FontStyle = "Bold"
         .Font.Color = vbRed
         .BorderAround xlContinuous, xlThin
     End With
         
-        .Range("G5:G" & "K5:K" & lrow).WrapText = False
+        .Range("G5:G" & "K5:K" & lRow).WrapText = False
         .Range("A5:K5").Interior.Color = RGB(141, 180, 227)
         .Cells(7).EntireColumn.AutoFit
         .Cells(11).EntireColumn.AutoFit
@@ -465,6 +465,8 @@ Sub ComparingFrozenReportWithConsReport()
     'Comparing against list
     Dim consList As Range
     Dim consListCellRow As Long
+    Dim LBoundRow As Long
+    Dim UBoundRow As Long
     Dim consListHeaderRowNum As Integer
     
     'Variable to hold if match found on the comparing against list
@@ -531,11 +533,26 @@ Sub ComparingFrozenReportWithConsReport()
         
       Else
     
+    
+consListCellRow = 1
+NextIteration:
+'Check multiple rows for the same value in the range
     With consList
-            consListCellRow = .Find(What:=allOnHandListSkuCriteria, After:=.Cells(1, 1), LookIn:=xlValues, _
-                                            LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:=True, _
-                                            SearchFormat:=False).Row
-        End With
+            If consListCellRow = 1 Then
+                    consListCellRow = .Find(What:=allOnHandListSkuCriteria, After:=.Cells(consListCellRow, 1), LookIn:=xlValues, _
+                                                LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:=True, _
+                                                SearchFormat:=False).Row
+                    LBoundRow = consListCellRow
+                
+                Else
+                    consListCellRow = .Find(What:=allOnHandListSkuCriteria, After:=.Cells(consListCellRow, 1), LookIn:=xlValues, _
+                                                LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:=True, _
+                                                SearchFormat:=False).Row
+                    UBoundRow = consListCellRow
+            End If
+    End With
+        
+    If LBoundRow = UBoundRow Then GoTo NextSkuCell:
         
     If allOnHandListResult.Cells(allOnHandListSkuCell.Row - allOnHandListHeaderRowNum).value = vbNullString Then
     
@@ -554,15 +571,22 @@ Sub ComparingFrozenReportWithConsReport()
                                                                         & " (" _
                                                                         & consList.Cells(consListCellRow - consListHeaderRowNum, -6).value _
                                                                         & ") " _
-                                                                        & consList.Cells(consListCellRow - consListHeaderRowNum, -5).value
+                                                                       & consList.Cells(consListCellRow - consListHeaderRowNum, -5).value
+        
         End If
     End If
-     
+    
+    If LBoundRow <> UBoundRow Then GoTo NextIteration:
+         
+NextSkuCell:
+    LBoundRow = 0
+    UBoundRow = 0
+    
     Next allOnHandListSkuCell
-        
+     
         Application.ScreenUpdating = True
         
-            MsgBox "Process completed!"
+        MsgBox "Process completed!"
     
 ErrorHandler:
         Application.ScreenUpdating = True
