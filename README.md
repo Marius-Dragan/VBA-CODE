@@ -14,7 +14,7 @@ The code here mostly relates to examples used to:
 * **sort** active worksheets in ascending or descending order
 * **split** cell data into multiple cells
 * **merging** 2 or more cells into one
-* **sending emails** from excel data base
+* **sending emails** from excel **database**
 * **edit worksheets**
 
 Personal **Productivity AddIn** for Excel and collection of useful **snippets/tools**.
