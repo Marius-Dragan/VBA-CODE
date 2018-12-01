@@ -139,4 +139,11 @@ Dim cell As Range
              End Select
         Next
 End Sub
+Sub RemoveAllSpaceInString()
+    With ActiveSheet
+        Call RemoveSpaceV2
+        Intersect(Selection, .UsedRange).Replace " ", ""
+    End With
+End Sub
+
 
