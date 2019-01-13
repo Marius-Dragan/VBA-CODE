@@ -25,6 +25,7 @@ Sub ComparingTwoLists()
     
     'Variable to hold if match found on the comparingAgainstList
     Dim foundMatch As Range
+    Dim firstFoundMatchingAddress As String
     
     On Error GoTo ErrorHandler
     
@@ -96,13 +97,21 @@ Sub ComparingTwoLists()
         End If
       Else
         
+       firstFoundMatchingAddress = foundMatch.Address
+       
+    Do
+        
     With compareAgainstList
-         compareAgainstListCellRowNum = .Find(What:=cellCriteria, After:=.Cells(1, 1), LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:=True, SearchFormat:=False).Row
+         'compareAgainstListCellRowNum = .Find(What:=cellCriteria, After:=.Cells(1, 1), LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:=True, SearchFormat:=False).Row
+          compareAgainstListCellRowNum = foundMatch.Row
     End With
         
         sourceListResult.Cells(sourceListCell.Row - sourceListHeaderRowNum).value = compareAgainstList.Cells(compareAgainstListCellRowNum - compareAgainstListHeaderRowNum, compareAgainstListColumnsCount).value
-
-    End If
+    
+    Loop While foundMatch.Address <> firstFoundMatchingAddress
+    
+     End If
+     
     Next sourceListCell
         
         With sourceListResult

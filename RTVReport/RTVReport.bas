@@ -299,6 +299,7 @@ Dim lastRow As Long
 End Sub
 Sub RTV_ComparingInventoryListToScannerList()
 '--> Need to add dependency SmartUtlilities
+'--> The comparing process takes into consideration that both lists contains unique values
 
     'Source list
     Dim currentInventoryListCellRow As Long
@@ -396,7 +397,9 @@ Sub RTV_ComparingInventoryListToScannerList()
       Else
     
     With inventoryList
-            currentInventoryListCellRow = .Find(What:=scannerListSkuCriteria, After:=.Cells(1, 1), LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:=True, SearchFormat:=False).Row
+            'Testing to see if same result needs to be done
+            currentInventoryListCellRow = foundMatchinginventoryListSku.Row 'To delete this row and uncomment below if not working
+            'currentInventoryListCellRow = .Find(What:=scannerListSkuCriteria, After:=.Cells(1, 1), LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:=True, SearchFormat:=False).Row
         End With
          scannerListResult.Cells(scannerListSkuCell.Row - scannerListHeaderRowNum).value = inventoryList.Cells(currentInventoryListCellRow - inventoryListHeaderRowNum, 3).value
     End If
@@ -424,7 +427,8 @@ Sub RTV_ComparingInventoryListToScannerList()
       Else
         
     With scannerList 'If the column heading of both lists match the it will retrive the first row of heading
-         currentScannerListCellRow = .Find(What:=inventoryListSkuCriteria, After:=.Cells(1, 1), LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:=True, SearchFormat:=False).Row
+         currentScannerListCellRow = foundMatchingScannerListSku.Row 'To delete this row and uncomment below if tests faild
+         'currentScannerListCellRow = .Find(What:=inventoryListSkuCriteria, After:=.Cells(1, 1), LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:=True, SearchFormat:=False).Row
     End With
         
         inventoryListResult.Cells(inventoryListSkuCell.Row - inventoryListHeaderRowNum).value = scannerList.Cells(currentScannerListCellRow - scannerListHeaderRowNum, 7).value
@@ -435,7 +439,8 @@ Sub RTV_ComparingInventoryListToScannerList()
     Application.ScreenUpdating = True
     
     MsgBox "Process completed!"
-    
+ 
+Exit Sub
 ErrorHandler:
         Application.ScreenUpdating = True
         Select Case Err.Number
@@ -452,6 +457,7 @@ ErrorHandler:
     
     End Sub
 Sub RTV_ComparingInventoryListToConsList()
+'--> Need to add dependency SmartUtlilities
 
     'Source list
     Dim inventoryList As Range
@@ -464,8 +470,11 @@ Sub RTV_ComparingInventoryListToConsList()
     'Comparing against list
     Dim consList As Range
     Dim consListCellRow As Long
-    Dim consListHeaderRowsCount As Integer
-    Dim consListColumnsCount As Integer
+    Dim consListHeaderRowNum As Integer
+    
+    'Output variables
+    Dim firstFoundMatchingAddress As String
+    Dim countSkus As Long
     
     'Variable to hold if match found on the comparing against list
     Dim inventoryListSkuCriteria As Variant
@@ -476,20 +485,20 @@ Sub RTV_ComparingInventoryListToConsList()
     SmartUtilities.ResetFilters
     
     '---> Allows users to select the ranges in case the table columns will change in the future
-    Set inventoryList = Application.InputBox("Select your inventory list range including header:", Default:="'" & ActiveSheet.Name & "'!", Type:=8)
+    Set inventoryList = Application.InputBox("Select your all on hand list list range including header:", Default:="'" & ActiveSheet.Name & "'!", Type:=8)
         If Not inventoryList Is Nothing Then
             If inventoryList.Columns.Count = 1 Then
                 Else
-                 MsgBox "Multiple columns selected! Please pick only one column in the inventory sheet and retry.", vbCritical
+                 MsgBox "Multiple columns selected! Please pick only one column in the all on hand list sheet and retry.", vbCritical
                 Exit Sub
             End If
         End If
         
-     Set inventoryListResult = Application.InputBox("Select the column header cell in the invenotry list where to write the result:", Default:="'" & ActiveSheet.Name & "'!", Type:=8)
+     Set inventoryListResult = Application.InputBox("Select the column header cell in the all on hand list where to write the result:", Default:="'" & ActiveSheet.Name & "'!", Type:=8)
         If Not inventoryListResult Is Nothing Then
             If inventoryListResult.Rows.Count = 1 Then
                 Else
-                 MsgBox "Multiple cells selected! Please pick only the header cell in the inventory sheet and retry.", vbCritical
+                 MsgBox "Multiple cells selected! Please pick only the header cell in the all on hand list sheet and retry.", vbCritical
                 Exit Sub
             End If
         End If
@@ -506,11 +515,16 @@ Sub RTV_ComparingInventoryListToConsList()
         
     inventoryListHeaderRowsCount = inventoryListResult.Row
     inventoryListHeaderRowNum = inventoryListResult.Row - 1
-    consListHeaderRowsCount = consList.Row - 1
-        
+    
+    consListHeaderRowNum = consList.Row - 1
+      
         Application.ScreenUpdating = False
         
-    '---> Allows users to compare the inventory list to the consignment list in order to find matches
+     If consList.End(xlToRight).value <> "Matching skus" Then
+        consList.End(xlToRight).Offset(0, 1).value = "Matching skus"
+     End If
+     
+    '---> Allows users to compare the consignment list to the inventory list in order to find matches
     For Each inventoryListSkuCell In inventoryList
         inventoryListSkuCriteria = Trim(inventoryListSkuCell.value) 'Using trim to delete the extra space from the data otherwhise it will throw an error
     
@@ -530,39 +544,54 @@ Sub RTV_ComparingInventoryListToConsList()
         
       Else
     
-    With consList
-            consListCellRow = .Find(What:=inventoryListSkuCriteria, After:=.Cells(1, 1), LookIn:=xlValues, _
-                                            LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:=True, _
-                                            SearchFormat:=False).Row
-        End With
+            consListCellRow = foundMatchinginventoryListSku.Row
+            firstFoundMatchingAddress = foundMatchinginventoryListSku.Address
+                                   
+            Do '---> Looping through all instances of a value and write result
+                  
+                With consList
+                    If inventoryListResult.Cells(inventoryListSkuCell.Row - inventoryListHeaderRowNum).value = vbNullString Then
+                    
+                         inventoryListResult.Cells(inventoryListSkuCell.Row - inventoryListHeaderRowNum).value = .Cells(consListCellRow - consListHeaderRowNum, 6).value & " on cons " _
+                                                                                        & .Cells(consListCellRow - consListHeaderRowNum, -7).value _
+                                                                                        & " (" _
+                                                                                        & .Cells(consListCellRow - consListHeaderRowNum, -6).value _
+                                                                                        & ") " _
+                                                                                        & .Cells(consListCellRow - consListHeaderRowNum, -5).value
+                    Else
+                        
+                         inventoryListResult.Cells(inventoryListSkuCell.Row - inventoryListHeaderRowNum).value = inventoryListResult.Cells(inventoryListSkuCell.Row - inventoryListHeaderRowNum).value _
+                                                                                        & " // " _
+                                                                                        & .Cells(consListCellRow - consListHeaderRowNum, 6).value & " on cons " _
+                                                                                        & .Cells(consListCellRow - consListHeaderRowNum, -7).value _
+                                                                                        & " (" _
+                                                                                        & .Cells(consListCellRow - consListHeaderRowNum, -6).value _
+                                                                                        & ") " _
+                                                                                       & .Cells(consListCellRow - consListHeaderRowNum, -5).value
+                        
+                    End If
+                    
+                    countSkus = countSkus + 1
+                    
+                    If foundMatchinginventoryListSku.End(xlToRight) <> "Found" Then
+                        foundMatchinginventoryListSku.End(xlToRight).Offset(0, 1).value = "Found"
+                    End If
+                    
+                    Set foundMatchinginventoryListSku = .FindNext(foundMatchinginventoryListSku)
+                    
+                End With
+                
+            Loop While Not foundMatchinginventoryListSku Is Nothing And foundMatchinginventoryListSku.Address <> firstFoundMatchingAddress
         
-    If inventoryListResult.Cells(inventoryListSkuCell.Row - inventoryListHeaderRowNum).value = vbNullString Then
-    
-         inventoryListResult.Cells(inventoryListSkuCell.Row - inventoryListHeaderRowNum).value = consList.Cells(consListCellRow - consListHeaderRowsCount, 6).value & " on cons " _
-                                                                        & consList.Cells(consListCellRow - consListHeaderRowsCount, -7).value _
-                                                                        & " (" _
-                                                                        & consList.Cells(consListCellRow - consListHeaderRowsCount, -6).value _
-                                                                        & ") " _
-                                                                        & consList.Cells(consListCellRow - consListHeaderRowsCount, -5).value
-        Else
-        
-         inventoryListResult.Cells(inventoryListSkuCell.Row - inventoryListHeaderRowNum).value = inventoryListResult.Cells(inventoryListSkuCell.Row - inventoryListHeaderRowNum).value _
-                                                                        & " // " _
-                                                                        & consList.Cells(consListCellRow - consListHeaderRowsCount, 6).value & " on cons " _
-                                                                        & consList.Cells(consListCellRow - consListHeaderRowsCount, -7).value _
-                                                                        & " (" _
-                                                                        & consList.Cells(consListCellRow - consListHeaderRowsCount, -6).value _
-                                                                        & ") " _
-                                                                        & consList.Cells(consListCellRow - consListHeaderRowsCount, -5).value
-        End If
     End If
-     
-    Next inventoryListSkuCell
         
+    Next inventoryListSkuCell
+     
         Application.ScreenUpdating = True
         
-            MsgBox "Process completed!"
-    
+        MsgBox "Process completed!" & vbNewLine & vbNewLine & "Found " & countSkus & " skus in the consignment list." & vbCrLf, vbInformation, "Comparing lists"
+
+Exit Sub
 ErrorHandler:
         Application.ScreenUpdating = True
         Select Case Err.Number
@@ -576,6 +605,5 @@ ErrorHandler:
                 MsgBox Err.Number, Err.Source, Err.Description, Err.HelpFile, Err.HelpContext
                 
         End Select
-
 End Sub
 
