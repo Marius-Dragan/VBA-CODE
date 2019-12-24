@@ -1,22 +1,10 @@
-# VBA-CODE
+# ERP Infor M3 API - Data Upload
 ## Excel VBA Code - Tested Examples
 
-This repository contains example **Excel VBA code** projects as either **modules, class modules or forms.**
+This repository contains example **Excel VBA code** projects as **modules.**
 
 ## Overview
 The code here mostly relates to examples used to:
-* **compare** workbooks or worksheets using **.Find** and **.FindNext**
-* **filter** data by activating a cell that has the required field that you want to filter by
-* **add** workbooks or worksheets within procedures as needed
-* **copy** data from one sheet to another
-* **save** files in different folders and formats
-* **remove** files and folders through VBA code from computer
-* **sort** active worksheets in ascending or descending order
-* **split** cell data into multiple cells
-* **merging** 2 or more cells into one
-* **sending emails** from excel **database**
-* **edit worksheets**
-* **API data upload**
+* **API data upload** that helps with uploading big data sets to M3. **Note** all modules will have at least 1 extra dependent used to encode and decode data therefore at least 2 modules will need to be imported for the prohect to work,
 
 
-Personal **Productivity AddIn** for Excel and collection of useful **snippets/tools**.
